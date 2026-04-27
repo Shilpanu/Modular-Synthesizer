@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>⚡ MODULAR SYNTHESIZER STUDIO | Professional Virtual Eurorack ⚡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #14141f;
+            --module-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --neon-cyan: #00d4ff;
+            --neon-magenta: #ff00ff;
+            --neon-amber: #ffb347;
+            --neon-green: #10b981;
+            --jack-bg: #2a2a3a;
+            --glow-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', 'Monaco', monospace;
+            background: var(--bg-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Header */
+        .studio-header {
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--neon-cyan);
+            z-index: 100;
+            position: relative;
+        }
+
+        .logo .neon-text {
+            font-size: 1.4rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .global-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .master-volume {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 12px;
+            border-radius: 30px;
+        }
+
+        button {
+            background: rgba(30, 30, 50, 0.8);
+            border: 1px solid var(--neon-cyan);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+        }
+
+        button:hover {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* Workspace */
+        .workspace {
+            display: flex;
+            height: calc(100vh - 110px);
+        }
+
+        /* Module Library */
+        .module-library {
+            width: 220px;
+            background: rgba(20, 20, 31, 0.95);
+            border-right: 1px solid var(--neon-cyan);
+            padding: 15px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .module-library h3, .preset-section h4 {
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .library-item {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: grab;
+            text-align: center;
+            transition: 0.1s;
+            border-left: 3px solid var(--neon-cyan);
+        }
+
+        .library-item:hover {
+            background: var(--neon-cyan);
+            color: black;
+            transform: translateX(5px);
+        }
+
+        .preset-btn {
+            width: 100%;
+            margin-bottom: 8px;
+            background: #1a1a2e;
+        }
+
+        /* Patch Bay */
+        .patch-bay {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(circle at 20% 30%, #0d0d15, #07070c);
+        }
+
+        .grid-background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(0,212,255,0.08) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0,212,255,0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        .modules-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .cables-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Visualizers */
+        .visualizers {
+            width: 300px;
+            background: rgba(20, 20, 31, 0.95);
+            border-left: 1px solid var(--neon-cyan);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .visualizers h4 {
+            color: var(--neon-cyan);
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+        }
+
+        canvas { background: #000; border-radius: 8px; width: 100%; }
+        #oscilloscopeCanvas, #spectrumCanvas { height: 120px; }
+
+        .meter-bar {
+            background: #222;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        #cpuBar { width: 0%; height: 100%; background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000); transition: width 0.1s; }
+
+        .status-bar {
+            background: #0a0a0f;
+            padding: 6px 20px;
+            display: flex;
+            gap: 20px;
+            font-size: 0.7rem;
+            border-top: 1px solid #222;
+            color: #888;
+        }
+
+        /* Module Styles */
+        .module {
+            position: absolute;
+            width: 280px;
+            background: var(--module-bg);
+            border-radius: 12px;
+            border: 1px solid rgba(0,212,255,0.4);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            cursor: move;
+            z-index: 30;
+            transition: box-shadow 0.1s;
+        }
+        .module:hover { box-shadow: var(--glow-shadow); border-color: var(--neon-cyan); }
+        .module-header {
+            background: rgba(0,0,0,0.6);
+            padding: 8px 12px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--neon-cyan);
+        }
+        .module-title { font-weight: bold; color: var(--neon-cyan); font-size: 13px; }
+        .module-close { cursor: pointer; color: #ff5555; font-weight: bold; }
+        .module-body { padding: 12px; }
+
+        .param-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .param-label { font-size: 10px; color: #aaa; text-transform: uppercase; }
+
+        /* Knob */
+        .knob-wrapper {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            width: 55px;
+        }
+        .knob {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #3a3a4a, #1a1a2a);
+            border: 2px solid #555;
+            cursor: pointer;
+            position: relative;
+        }
+        .knob::after {
+            content: '';
+            position: absolute;
+            width: 3px;
+            height: 18px;
+            background: var(--neon-cyan);
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%) rotate(0deg);
+            transform-origin: bottom center;
+        }
+        .knob-value { font-size: 9px; color: var(--neon-cyan); margin-top: 5px; text-align: center; }
+
+        /* Waveform Buttons */
+        .wave-group {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .wave-btn {
+            background: #222;
+            border: none;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .wave-btn.active { background: var(--neon-cyan); color: black; }
+
+        /* Jacks */
+        .jack-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+            font-size: 10px;
+        }
+        .jack {
+            width: 14px;
+            height: 14px;
+            background: var(--jack-bg);
+            border-radius: 50%;
+            border: 2px solid #666;
+            cursor: pointer;
+            transition: 0.05s;
+        }
+        .jack:hover { transform: scale(1.3); background: var(--neon-cyan); box-shadow: 0 0 8px cyan; }
+        .jack.audio-out { border-color: #3b82f6; }
+        .jack.cv-out { border-color: #10b981; }
+        .jack.gate { border-color: #f59e0b; }
+
+        .slider {
+            width: 100%;
+            margin: 8px 0;
+        }
+        input[type="range"] { width: 100%; background: #333; height: 3px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="studio-header">
+    <div class="logo"><span class="neon-text">⚡ MODULAR SYNTHESIZER STUDIO ⚡</span></div>
+    <div class="global-controls">
+        <div class="master-volume">🔊 MASTER <input type="range" id="masterVol" min="0" max="1" step="0.01" value="0.7"><span id="volVal">70%</span></div>
+        <button id="savePatchBtn">💾 Save</button>
+        <button id="loadPatchBtn">📂 Load</button>
+        <button id="clearAllBtn">🗑️ Clear</button>
+    </div>
+</div>
+<div class="workspace">
+    <aside class="module-library">
+        <h3>📦 MODULES</h3>
+        <div class="library-item" data-type="VCO">🎵 VCO Oscillator</div>
+        <div class="library-item" data-type="VCF">🎛️ VCF Filter</div>
+        <div class="library-item" data-type="ADSR">📈 ADSR Envelope</div>
+        <div class="library-item" data-type="LFO">🌀 LFO Modulator</div>
+        <div class="library-item" data-type="VCA">🔊 VCA Amplifier</div>
+        <div class="library-item" data-type="Delay">⏱️ Delay Effect</div>
+        <div class="library-item" data-type="Reverb">🌊 Reverb Effect</div>
+        <div class="preset-section"><h4>🎵 PRESETS</h4>
+            <button class="preset-btn" data-preset="bass">Deep Bass</button>
+            <button class="preset-btn" data-preset="lead">Lead Synth</button>
+            <button class="preset-btn" data-preset="pad">Ambient Pad</button>
+            <button class="preset-btn" data-preset="fx">SFX Noise</button>
+        </div>
+    </aside>
+    <main class="patch-bay" id="patchBay">
+        <div class="grid-background"></div>
+        <div id="modulesContainer" class="modules-container"></div>
+        <canvas id="cablesCanvas" class="cables-canvas"></canvas>
+    </main>
+    <aside class="visualizers">
+        <div><h4>📊 OSCILLOSCOPE</h4><canvas id="oscilloscopeCanvas" width="300" height="120"></canvas></div>
+        <div><h4>🌈 SPECTRUM</h4><canvas id="spectrumCanvas" width="300" height="120"></canvas></div>
+        <div><h4>⚡ PERFORMANCE</h4><div class="meter-bar"><div id="cpuBar"></div></div><div>Active Voices: <span id="voiceCount">0</span></div></div>
+    </aside>
+</div>
+<div class="status-bar"><div id="audioStatus">🔴 Click to start Audio</div><div id="midiStatus">🎹 MIDI: Not Connected</div><div id="connStatus">✅ Ready</div></div>
+
+<script>
+    // ======================== AUDIO ENGINE ========================
+    let audioCtx = null;
+    let masterGain = null;
+    let analyser = null;
+    let isAudioReady = false;
+
+    async function initAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.7;
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        masterGain.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        await audioCtx.resume();
+        isAudioReady = true;
+        document.getElementById('audioStatus').innerHTML = '🟢 Audio Active | Modular Ready';
+        document.getElementById('audioStatus').style.color = '#4ade80';
+    }
+
+    // Helper to create safe nodes
+    function createGain() { return audioCtx.createGain(); }
+    function createOsc() { return audioCtx.createOscillator(); }
+
+    // ======================== MODULE STORAGE ========================
+    let allModules = new Map(); // id -> module object
+    let nextId = 1;
+    let cables = []; // { fromMod, fromJack, toMod, toJack, color }
+    let activeConnection = null;
+    let animationFrame = null;
+
+    // Module Classes
+    class BaseModule {
+        constructor(id, type, x, y) { this.id = id; this.type = type; this.x = x; this.y = y; this.params = {}; this.nodes = {}; this.initAudio(); }
+        initAudio() {}
+        setParam(key, val) { this.params[key] = val; this.updateParam(key, val); }
+        updateParam(key, val) {}
+        getOutput() { return null; }
+        getInput() { return null; }
+        connectTo(target) { const out = this.getOutput(); if(out && target.getInput) out.connect(target.getInput()); }
+        disconnect() { Object.values(this.nodes).forEach(n => { try { n.disconnect(); } catch(e){} }); }
+    }
+
+    // VCO
+    class VCOModule extends BaseModule {
+        initAudio() { this.osc = createOsc(); this.gain = createGain(); this.osc.type = 'sawtooth'; this.osc.frequency.value = 440; this.gain.gain.value = 0.5; this.osc.connect(this.gain); this.osc.start(); this.params = { freq: 440, waveform: 'sawtooth', volume: 0.5 }; }
+        updateParam(key,val) { if(key === 'freq') this.osc.frequency.setTargetAtTime(val, audioCtx.currentTime, 0.01); if(key === 'waveform') this.osc.type = val; if(key === 'volume') this.gain.gain.value = val; }
+        getOutput() { return this.gain; }
+        render(container) { return this.createDiv(container, '🎵 VCO', [
+            `<div class="param-row"><span class="param-label">FREQ</span><div class="knob-wrapper" data-param="freq"><div class="knob" id="knob_freq"></div><div class="knob-value">${this.params.freq}Hz</div></div></div>`,
+            `<div class="wave-group"><button class="wave-btn ${this.params.waveform==='sine'?'active':''}" data-wave="sine">Sine</button><button class="wave-btn ${this.params.waveform==='sawtooth'?'active':''}" data-wave="sawtooth">Saw</button><button class="wave-btn ${this.params.waveform==='square'?'active':''}" data-wave="square">Square</button><button class="wave-btn ${this.params.waveform==='triangle'?'active':''}" data-wave="triangle">Tri</button></div>`,
+            `<div class="jack-row"><div class="jack audio-out" data-jack="audio_out"></div><span>AUDIO OUT</span></div><div class="jack-row"><div class="jack cv-out" data-jack="fm_in"></div><span>FM CV IN</span></div>`
+        ]); }
+        createDiv(container, title, controls) { const div = document.createElement('div'); div.className = 'module'; div.style.left = `${this.x}px`; div.style.top = `${this.y}px`; div.id = `mod_${this.id}`; div.innerHTML = `<div class="module-header"><span class="module-title">${title}</span><span class="module-close">✖</span></div><div class="module-body">${controls.join('')}</div>`; container.appendChild(div); return div; }
+    }
+    class VCFModule extends BaseModule {
+        initAudio() { this.filter = audioCtx.createBiquadFilter(); this.filter.type = 'lowpass'; this.filter.frequency.value = 1000; this.filter.Q.value = 1; this.params = { cutoff: 1000, resonance: 1, type: 'lowpass' }; }
+        updateParam(key,val) { if(key === 'cutoff') this.filter.frequency.setTargetAtTime(val, audioCtx.currentTime, 0.01); if(key === 'resonance') this.filter.Q.value = val; if(key === 'type') this.filter.type = val; }
+        getOutput() { return this.filter; }
+        getInput() { return this.filter; }
+        render(c) { const div = document.createElement('div'); div.className = 'module'; div.style.left = `${this.x}px`; div.style.top = `${this.y}px`; div.id = `mod_${this.id}`;
+        div.innerHTML = `<div class="module-header"><span class="module-title">🎛️ VCF</span><span class="module-close">✖</span></div><div class="module-body">
+            <div class="param-row"><span class="param-label">CUTOFF</span><div class="knob-wrapper" data-param="cutoff"><div class="knob"></div><div class="knob-value">${this.params.cutoff}Hz</div></div></div>
+            <div class="param-row"><span class="param-label">RESO</span><div class="knob-wrapper" data-param="resonance"><div class="knob"></div><div class="knob-value">${this.params.resonance}</div></div></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_in"></div><span>AUDIO IN</span></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_out"></div><span>AUDIO OUT</span></div>
+        </div>`; c.appendChild(div); return div; }
+    }
+    class VCAModule extends BaseModule {
+        initAudio() { this.gain = createGain(); this.gain.gain.value = 0.7; this.params = { level: 0.7 }; }
+        updateParam(key,val) { this.gain.gain.value = val; }
+        getOutput() { return this.gain; }
+        getInput() { return this.gain; }
+        render(c) { const div = document.createElement('div'); div.className = 'module'; div.style.cssText = `left:${this.x}px;top:${this.y}px;`; div.id = `mod_${this.id}`;
+        div.innerHTML = `<div class="module-header"><span class="module-title">🔊 VCA</span><span class="module-close">✖</span></div><div class="module-body">
+            <div class="param-row"><span class="param-label">LEVEL</span><input type="range" min="0" max="1" step="0.01" value="${this.params.level}" data-param="level" class="slider"></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_in"></div><span>AUDIO IN</span></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_out"></div><span>AUDIO OUT</span></div>
+        </div>`; c.appendChild(div); return div; }
+    }
+    class ADSRModule extends BaseModule {
+        initAudio() { this.gain = createGain(); this.gain.gain.value = 0; this.params = { attack: 0.05, decay: 0.2, sustain: 0.5, release: 0.3 }; }
+        trigger() { const now = audioCtx.currentTime; this.gain.gain.cancelScheduledValues(now); this.gain.gain.setValueAtTime(0, now); this.gain.gain.linearRampToValueAtTime(1, now + this.params.attack); this.gain.gain.linearRampToValueAtTime(this.params.sustain, now + this.params.attack + this.params.decay); this.gain.gain.linearRampToValueAtTime(0, now + this.params.attack + this.params.decay + this.params.release); }
+        getOutput() { return this.gain; }
+        render(c) { const div = document.createElement('div'); div.className = 'module'; div.style.cssText = `left:${this.x}px;top:${this.y}px;`; div.id = `mod_${this.id}`;
+        div.innerHTML = `<div class="module-header"><span class="module-title">📈 ADSR</span><span class="module-close">✖</span></div><div class="module-body">
+            <div class="param-row"><span class="param-label">A</span><input type="range" min="0.01" max="1" step="0.01" value="${this.params.attack}" data-param="attack"></div>
+            <div class="param-row"><span class="param-label">D</span><input type="range" min="0.01" max="1" step="0.01" value="${this.params.decay}" data-param="decay"></div>
+            <div class="param-row"><span class="param-label">S</span><input type="range" min="0" max="1" step="0.01" value="${this.params.sustain}" data-param="sustain"></div>
+            <div class="param-row"><span class="param-label">R</span><input type="range" min="0.05" max="2" step="0.01" value="${this.params.release}" data-param="release"></div>
+            <div class="jack-row"><div class="jack gate" data-jack="gate_in"></div><span>GATE IN</span></div>
+            <div class="jack-row"><div class="jack cv-out" data-jack="env_out"></div><span>ENV OUT</span></div>
+        </div>`; c.appendChild(div); return div; }
+    }
+    class LFOModule extends BaseModule {
+        initAudio() { this.osc = createOsc(); this.osc.type = 'sine'; this.osc.frequency.value = 2; this.osc.start(); this.gain = createGain(); this.gain.gain.value = 0.5; this.osc.connect(this.gain); this.params = { rate: 2, waveform: 'sine', depth: 0.5 }; }
+        updateParam(key,val) { if(key === 'rate') this.osc.frequency.value = val; if(key === 'waveform') this.osc.type = val; if(key === 'depth') this.gain.gain.value = val; }
+        getOutput() { return this.gain; }
+        render(c) { const div = document.createElement('div'); div.className = 'module'; div.style.cssText = `left:${this.x}px;top:${this.y}px;`; div.id = `mod_${this.id}`;
+        div.innerHTML = `<div class="module-header"><span class="module-title">🌀 LFO</span><span class="module-close">✖</span></div><div class="module-body">
+            <div class="param-row"><span class="param-label">RATE</span><div class="knob-wrapper" data-param="rate"><div class="knob"></div><div class="knob-value">${this.params.rate}Hz</div></div></div>
+            <div class="wave-group"><button class="wave-btn ${this.params.waveform==='sine'?'active':''}" data-wave="sine">Sine</button><button class="wave-btn ${this.params.waveform==='triangle'?'active':''}" data-wave="triangle">Tri</button></div>
+            <div class="jack-row"><div class="jack cv-out" data-jack="cv_out"></div><span>CV OUT</span></div>
+        </div>`; c.appendChild(div); return div; }
+    }
+    class DelayModule extends BaseModule {
+        initAudio() { this.delay = audioCtx.createDelay(2); this.fb = createGain(); this.dry = createGain(); this.wet = createGain(); this.delay.delayTime.value = 0.3; this.fb.gain.value = 0.4; this.wet.gain.value = 0.3; this.delay.connect(this.fb); this.fb.connect(this.delay); this.params = { time: 0.3, feedback: 0.4, mix: 0.3 }; }
+        updateParam(key,val) { if(key === 'time') this.delay.delayTime.value = val; if(key === 'feedback') this.fb.gain.value = val; if(key === 'mix') this.wet.gain.value = val; }
+        getInput() { return this.dry; }
+        getOutput() { return this.wet; }
+        render(c) { const div = document.createElement('div'); div.className = 'module'; div.style.cssText = `left:${this.x}px;top:${this.y}px;`; div.id = `mod_${this.id}`;
+        div.innerHTML = `<div class="module-header"><span class="module-title">⏱️ DELAY</span><span class="module-close">✖</span></div><div class="module-body">
+            <div class="param-row"><span class="param-label">TIME</span><input type="range" min="0.05" max="1.5" step="0.01" value="${this.params.time}" data-param="time"></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_in"></div><span>AUDIO IN</span></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_out"></div><span>AUDIO OUT</span></div>
+        </div>`; c.appendChild(div); return div; }
+    }
+    class ReverbModule extends BaseModule {
+        initAudio() { this.convolver = audioCtx.createConvolver(); const length = 2 * audioCtx.sampleRate; const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate); for(let c=0;c<2;c++){ const data = impulse.getChannelData(c); for(let i=0;i<length;i++) data[i] = (Math.random()*2-1)*Math.exp(-i/(length*0.3)); } this.convolver.buffer = impulse; this.mix = createGain(); this.mix.gain.value = 0.4; this.params = { mix: 0.4 }; }
+        updateParam(key,val) { if(key === 'mix') this.mix.gain.value = val; }
+        getInput() { return this.mix; }
+        getOutput() { return this.convolver; }
+        render(c) { const div = document.createElement('div'); div.className = 'module'; div.style.cssText = `left:${this.x}px;top:${this.y}px;`; div.id = `mod_${this.id}`;
+        div.innerHTML = `<div class="module-header"><span class="module-title">🌊 REVERB</span><span class="module-close">✖</span></div><div class="module-body">
+            <div class="param-row"><span class="param-label">MIX</span><input type="range" min="0" max="1" step="0.01" value="${this.params.mix}" data-param="mix"></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_in"></div><span>AUDIO IN</span></div>
+            <div class="jack-row"><div class="jack audio-out" data-jack="audio_out"></div><span>AUDIO OUT</span></div>
+        </div>`; c.appendChild(div); return div; }
+    }
+
+    // Helper: add module
+    function addModule(type, x, y) {
+        let mod; const id = `mod_${nextId++}`;
+        if(type === 'VCO') mod = new VCOModule(id, type, x, y);
+        else if(type === 'VCF') mod = new VCFModule(id, type, x, y);
+        else if(type === 'VCA') mod = new VCAModule(id, type, x, y);
+        else if(type === 'ADSR') mod = new ADSRModule(id, type, x, y);
+        else if(type === 'LFO') mod = new LFOModule(id, type, x, y);
+        else if(type === 'Delay') mod = new DelayModule(id, type, x, y);
+        else if(type === 'Reverb') mod = new ReverbModule(id, type, x, y);
+        else return;
+        allModules.set(mod.id, mod);
+        const el = mod.render(document.getElementById('modulesContainer'));
+        attachModuleEvents(el, mod);
+        renderCables();
+        return mod;
+    }
+
+    function attachModuleEvents(el, mod) {
+        // drag
+        let dragging = false, startX, startY;
+        el.addEventListener('mousedown', (e) => { if(e.target.classList.contains('module-close')) return; dragging = true; startX = e.clientX - mod.x; startY = e.clientY - mod.y; el.style.zIndex = 1000; });
+        window.addEventListener('mousemove', (e) => { if(!dragging) return; mod.x = e.clientX - startX; mod.y = e.clientY - startY; el.style.left = `${mod.x}px`; el.style.top = `${mod.y}px`; renderCables(); });
+        window.addEventListener('mouseup', () => { dragging = false; el.style.zIndex = ''; });
+        // knobs
+        el.querySelectorAll('.knob-wrapper').forEach(kw => { const knobDiv = kw.querySelector('.knob'); let isRot = false; let startY = 0; let startVal = mod.params[kw.dataset.param]; knobDiv.addEventListener('mousedown', (e) => { isRot = true; startY = e.clientY; startVal = mod.params[kw.dataset.param]; e.stopPropagation(); });
+        window.addEventListener('mousemove', (e) => { if(!isRot) return; const delta = (startY - e.clientY) * 2; let newVal = startVal + delta; if(kw.dataset.param === 'freq') newVal = Math.min(2000, Math.max(20, newVal)); if(kw.dataset.param === 'cutoff') newVal = Math.min(15000, Math.max(20, newVal)); if(kw.dataset.param === 'resonance') newVal = Math.min(20, Math.max(0.5, newVal)); if(kw.dataset.param === 'rate') newVal = Math.min(30, Math.max(0.1, newVal)); mod.setParam(kw.dataset.param, newVal); kw.querySelector('.knob-value').innerText = newVal.toFixed(0)+(kw.dataset.param.includes('freq')?'Hz':''); const angle = ((newVal - 20) / (2000-20))*270 - 135; if(knobDiv) knobDiv.style.transform = `rotate(${angle}deg)`; });
+        window.addEventListener('mouseup', () => isRot = false); });
+        // waveform
+        el.querySelectorAll('.wave-btn').forEach(btn => { btn.addEventListener('click', () => { const wave = btn.dataset.wave; mod.setParam('waveform', wave); el.querySelectorAll('.wave-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }); });
+        // sliders
+        el.querySelectorAll('input[type="range"]').forEach(sl => { sl.addEventListener('input', (e) => { const val = parseFloat(e.target.value); mod.setParam(sl.dataset.param, val); if(sl.nextSibling) sl.nextSibling.innerText = val; }); });
+        // jacks
+        el.querySelectorAll('.jack').forEach(jack => {
+            jack.addEventListener('mousedown', (e) => { e.stopPropagation(); activeConnection = { modId: mod.id, jack: jack.dataset.jack, pos: { x: e.clientX, y: e.clientY } }; });
+            jack.addEventListener('mouseup', (e) => { e.stopPropagation(); if(activeConnection && activeConnection.modId !== mod.id) { cables.push({ id: Date.now()+Math.random(), fromMod: activeConnection.modId, fromJack: activeConnection.jack, toMod: mod.id, toJack: jack.dataset.jack, color: '#3b82f6' }); renderCables(); } activeConnection = null; });
+        });
+        // close
+        el.querySelector('.module-close').addEventListener('click', () => { mod.disconnect(); allModules.delete(mod.id); el.remove(); cables = cables.filter(c => c.fromMod !== mod.id && c.toMod !== mod.id); renderCables(); });
+    }
+
+    function renderCables() {
+        const canvas = document.getElementById('cablesCanvas');
+        const container = document.getElementById('patchBay');
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width; canvas.height = rect.height; canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px`;
+        const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+        cables.forEach(c => {
+            const fromEl = document.getElementById(`mod_${c.fromMod}`)?.querySelector(`[data-jack="${c.fromJack}"]`);
+            const toEl = document.getElementById(`mod_${c.toMod}`)?.querySelector(`[data-jack="${c.toJack}"]`);
+            if(fromEl && toEl) {
+                const p1 = getPos(fromEl, container); const p2 = getPos(toEl, container);
+                ctx.beginPath(); ctx.moveTo(p1.x,p1.y); const cp1x = p1.x + (p2.x-p1.x)*0.4; const cp1y = p1.y - 40; const cp2x = p2.x - (p2.x-p1.x)*0.4; const cp2y = p2.y - 40;
+                ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,p2.x,p2.y);
+                ctx.strokeStyle = c.color; ctx.lineWidth = 3; ctx.stroke();
+                ctx.setLineDash([5,8]); ctx.stroke(); ctx.setLineDash([]);
+            }
+        });
+    }
+    function getPos(el, container) { const r = el.getBoundingClientRect(); const cr = container.getBoundingClientRect(); return { x: r.left + r.width/2 - cr.left, y: r.top + r.height/2 - cr.top }; }
+
+    // Save/Load
+    function savePatch() { const data = { modules: Array.from(allModules.values()).map(m => ({ type:m.type, x:m.x, y:m.y, params:m.params })), cables }; localStorage.setItem('modular_patch', JSON.stringify(data)); alert('Patch saved!'); }
+    async function loadPatch() { const raw = localStorage.getItem('modular_patch'); if(!raw) return; const data = JSON.parse(raw); document.getElementById('modulesContainer').innerHTML = ''; allModules.clear(); cables = []; for(const m of data.modules) { const mod = addModule(m.type, m.x, m.y); if(mod && m.params) Object.entries(m.params).forEach(([k,v]) => mod.setParam(k,v)); } cables = data.cables || []; renderCables(); }
+    function clearAll() { if(confirm('Clear everything?')) { document.getElementById('modulesContainer').innerHTML = ''; allModules.clear(); cables = []; renderCables(); } }
+
+    // Presets
+    function loadPreset(name) { clearAll(); if(name === 'bass') { const vco = addModule('VCO', 100,200); const vcf = addModule('VCF', 400,200); const vca = addModule('VCA', 700,200); const adsr = addModule('ADSR', 700,380); vco.setParam('freq',55); vcf.setParam('cutoff',200); vcf.setParam('resonance',6); cables.push({ fromMod:vco.id, fromJack:'audio_out', toMod:vcf.id, toJack:'audio_in', color:'#3b82f6' }, { fromMod:vcf.id, fromJack:'audio_out', toMod:vca.id, toJack:'audio_in', color:'#3b82f6' }); renderCables(); } else if(name === 'lead') { const vco = addModule('VCO',100,200); const vca = addModule('VCA',400,200); vco.setParam('freq',880); vco.setParam('waveform','square'); cables.push({ fromMod:vco.id, fromJack:'audio_out', toMod:vca.id, toJack:'audio_in', color:'#3b82f6' }); renderCables(); } else if(name === 'pad') { const vco = addModule('VCO',100,200); const vcf = addModule('VCF',400,200); const rev = addModule('Reverb',700,200); vco.setParam('freq',220); vcf.setParam('cutoff',600); cables.push({ fromMod:vco.id, fromJack:'audio_out', toMod:vcf.id, toJack:'audio_in' }, { fromMod:vcf.id, fromJack:'audio_out', toMod:rev.id, toJack:'audio_in' }); renderCables(); } else if(name === 'fx') { const lfo = addModule('LFO',100,200); const vco = addModule('VCO',100,350); const delay = addModule('Delay',500,200); vco.setParam('freq',880); lfo.setParam('rate',8); cables.push({ fromMod:vco.id, fromJack:'audio_out', toMod:delay.id, toJack:'audio_in' }, { fromMod:lfo.id, fromJack:'cv_out', toMod:vco.id, toJack:'fm_in' }); renderCables(); } }
+
+    // Visualizers + master
+    let audioDataArray = new Uint8Array(256);
+    function drawVisuals() { if(!analyser) return; analyser.getByteTimeDomainData(audioDataArray); const canvas = document.getElementById('oscilloscopeCanvas'); const ctx = canvas.getContext('2d'); const w=canvas.width,h=canvas.height; ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); ctx.beginPath(); ctx.strokeStyle='#00d4ff'; for(let i=0;i<audioDataArray.length;i++) { const x = (i/w)*w; const y = (audioDataArray[i]/255)*h; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke(); requestAnimationFrame(drawVisuals); }
+    function drawSpectrum() { if(!analyser) return; const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data); const canvas = document.getElementById('spectrumCanvas'); const ctx = canvas.getContext('2d'); const w=canvas.width,h=canvas.height; ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); for(let i=0;i<data.length;i++) { const barH = (data[i]/255)*h; ctx.fillStyle = `hsl(${i*2}, 100%, 50%)`; ctx.fillRect(i*2, h-barH, 1, barH); } requestAnimationFrame(drawSpectrum); }
+    function updateCPU() { const usage = Math.min(100, allModules.size * 4 + Math.random()*10); document.getElementById('cpuBar').style.width = `${usage}%`; document.getElementById('voiceCount').innerText = allModules.size; requestAnimationFrame(updateCPU); }
+
+    // Library Drag
+    document.querySelectorAll('.library-item').forEach(item => { item.addEventListener('dragstart', (e) => { e.dataTransfer.setData('type', item.dataset.type); }); });
+    document.getElementById('patchBay').addEventListener('dragover', (e) => e.preventDefault());
+    document.getElementById('patchBay').addEventListener('drop', (e) => { e.preventDefault(); const type = e.dataTransfer.getData('type'); const rect = document.getElementById('patchBay').getBoundingClientRect(); addModule(type, e.clientX - rect.left - 140, e.clientY - rect.top - 60); });
+
+    // Event binding
+    document.getElementById('masterVol').addEventListener('input', (e) => { const val = parseFloat(e.target.value); if(masterGain) masterGain.gain.value = val; document.getElementById('volVal').innerText = `${Math.round(val*100)}%`; });
+    document.getElementById('savePatchBtn').addEventListener('click', savePatch);
+    document.getElementById('loadPatchBtn').addEventListener('click', loadPatch);
+    document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+    document.querySelectorAll('.preset-btn').forEach(btn => btn.addEventListener('click', () => loadPreset(btn.dataset.preset)));
+    document.body.addEventListener('click', () => { if(!audioCtx) initAudio(); });
+
+    // Start
+    function start() { initAudio(); drawVisuals(); drawSpectrum(); updateCPU(); addModule('VCO', 150, 200); addModule('VCF', 450, 200); addModule('VCA', 750, 200); }
+    start();
+</script>
+</body>
+</html>
